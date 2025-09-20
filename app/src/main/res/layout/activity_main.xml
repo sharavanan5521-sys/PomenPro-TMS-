@@ -5,15 +5,94 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/bground"
     tools:context=".MainActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hello World!"
+    <LinearLayout
+        android:layout_width="320dp"
+        android:layout_height="450dp"
+        android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/imgLogo"
+            android:layout_width="match_parent"
+            android:layout_height="130dp"
+            app:srcCompat="@drawable/logo" />
+
+        <EditText
+            android:id="@+id/txtUsername"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/rounded_conner"
+            android:ems="10"
+            android:hint="Username"
+            android:inputType="text"
+            android:padding="16dp"
+            android:textColor="#FAFAFA"
+            android:textColorHint="#737272" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:passwordToggleEnabled="true">
+
+            <EditText
+                android:id="@+id/txtPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:background="@drawable/rounded_conner"
+                android:ems="10"
+                android:hint="Password"
+                android:inputType="textPassword"
+                android:padding="16dp"
+                android:textColor="#FAFAFA"
+                android:textColorHighlight="#FBF8F8"
+                android:textColorHint="#757575"
+                android:textColorLink="#FFFCFC"
+                app:passwordToggleEnabled="true" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <Button
+            android:id="@+id/btnForgotPass"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="-30dp"
+            android:layout_marginTop="-10dp"
+            android:background="#00FFFFFF"
+            android:backgroundTint="#00FFFFFF"
+            android:text="Forgot Password?"
+            android:textAllCaps="false"
+            android:textColor="#F77216" />
+
+        <Button
+            android:id="@+id/btnLogin"
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center|center_horizontal"
+            android:layout_marginTop="3dp"
+            android:backgroundTint="#F2691C"
+            android:text="Log In"
+            android:textAlignment="center"
+            android:textSize="18dp"
+            app:iconPadding="0dp" />
+
+        <Button
+            android:id="@+id/btnSignup"
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center|center_horizontal"
+            android:layout_marginTop="10dp"
+            android:backgroundTint="#374050"
+            android:paddingTop="5dp"
+            android:text="Sign Up"
+            android:textAlignment="center"
+            android:textSize="18dp"
+            app:iconPadding="0dp" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

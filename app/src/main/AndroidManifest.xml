@@ -11,15 +11,32 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.PomenPro">
+
+        <!-- Login Activity (Launcher) -->
         <activity
-            android:name=".MainActivity"
+            android:name=".LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
 
+        <!-- Register Activity -->
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false" />
+
+        <!-- Admin Dashboard -->
+        <activity
+            android:name=".AdminDashboardActivity"
+            android:exported="false" />
+
+        <!-- Technician Dashboard -->
+        <activity
+            android:name=".TechnicianDashboardActivity"
+            android:exported="false"
+            android:theme="@style/Theme.PomenPro" />
+
+    </application>
 </manifest>

@@ -16,9 +16,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PomenPro">
 
-        <!-- Login (Launcher) -->
+        <!-- Splash Screen (Launcher) -->
         <activity
-            android:name="com.example.pomenpro.LoginActivity"
+            android:name=".SplashActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -26,19 +26,37 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".TaskActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PerformanceActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false" />
+
+        <!-- Login -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false" />
+
         <!-- Register -->
         <activity
-            android:name="com.example.pomenpro.RegisterActivity"
+            android:name=".RegisterActivity"
             android:exported="false" />
 
         <!-- Admin Dashboard -->
         <activity
-            android:name="com.example.pomenpro.AdminDashboardActivity"
+            android:name=".AdminDashboardActivity"
             android:exported="false" />
 
         <!-- Technician Dashboard -->
         <activity
-            android:name="com.example.pomenpro.TechnicianDashboardActivity"
+            android:name=".TechnicianDashboardActivity"
             android:exported="false"
             android:theme="@style/Theme.PomenPro" />
 

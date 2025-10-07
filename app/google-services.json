@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "165417188011",
+    "firebase_url": "https://pomenprotms-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "pomenprotms",
+    "storage_bucket": "pomenprotms.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:165417188011:android:c57297390d7b28163255ee",
+        "android_client_info": {
+          "package_name": "com.example.pomenpro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqYUVkZd2pMHLu5xmqUZWufmskk2qcxQ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,6 +1,5 @@
 package com.example.pomenpro;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Patterns;
@@ -12,8 +11,13 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
@@ -26,133 +30,124 @@ public class RegisterActivity extends AppCompatActivity {
 
     private EditText txtName, txtEmail, txtPassword, txtPhone;
     private RadioGroup radioGroupRole;
+    private RadioButton radioAdmin, radioTechnician;
     private Button btnRegister, btnBackLogin;
     private ProgressBar progressBar;
 
     private FirebaseAuth auth;
-    private DatabaseReference usersRef;
+    private DatabaseReference db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_register2); // your XML
+        // Keep it simple; avoid EdgeToEdge unless you added the dependency and @+id/main exists.
+        setContentView(R.layout.activity_register2);
 
-        // Firebase
+        // Firebase init (safe even if already initialized)
+        FirebaseApp.initializeApp(this);
         auth = FirebaseAuth.getInstance();
-        usersRef = FirebaseDatabase.getInstance().getReference("users");
+        db = FirebaseDatabase.getInstance().getReference();
 
-        // UI refs
         txtName = findViewById(R.id.txtName);
         txtEmail = findViewById(R.id.txtEmail);
         txtPassword = findViewById(R.id.txtPassword);
         txtPhone = findViewById(R.id.txtPhone);
         radioGroupRole = findViewById(R.id.radioGroupRole);
+        radioAdmin = findViewById(R.id.radioAdmin);
+        radioTechnician = findViewById(R.id.radioTechnician);
         btnRegister = findViewById(R.id.btnRegister);
         btnBackLogin = findViewById(R.id.btnBackLogin);
         progressBar = findViewById(R.id.progressBar);
 
-        btnRegister.setOnClickListener(v -> registerUser());
-        btnBackLogin.setOnClickListener(v -> {
-            startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
-            finish();
+        btnBackLogin.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { finish(); }
+        });
+        btnRegister.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { doRegister(); }
         });
     }
 
-    private void registerUser() {
-        String name = txtName.getText().toString().trim();
-        String email = txtEmail.getText().toString().trim();
-        String password = txtPassword.getText().toString().trim();
-        String phone = txtPhone.getText().toString().trim();
+    private void doRegister() {
+        final String name = safeTrim(txtName);
+        final String email = safeTrim(txtEmail);
+        final String pass = safeTrim(txtPassword);
+        final String phone = safeTrim(txtPhone);
+        final String role = radioAdmin.isChecked() ? "admin"
+                : (radioTechnician.isChecked() ? "technician" : "");
 
-        // Role
-        int selectedId = radioGroupRole.getCheckedRadioButtonId();
-        String finalRole = (selectedId == R.id.radioAdmin) ? "admin" : "technician";
+        if (TextUtils.isEmpty(name)) { toast("Name is required."); return; }
+        if (!isValidEmail(email)) { toast("Enter a valid email."); return; }
+        if (TextUtils.isEmpty(pass) || pass.length() < 6) { toast("Password must be at least 6 characters."); return; }
+        if (TextUtils.isEmpty(phone)) { toast("Phone is required."); return; }
+        if (TextUtils.isEmpty(role)) { toast("Select a role."); return; }
 
-        // Validation
-        if (TextUtils.isEmpty(name)) {
-            txtName.setError("Name required");
-            txtName.requestFocus();
-            return;
-        }
-        if (TextUtils.isEmpty(email) || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            txtEmail.setError("Valid email required");
-            txtEmail.requestFocus();
-            return;
-        }
-        if (TextUtils.isEmpty(password) || password.length() < 6) {
-            txtPassword.setError("Password (min 6 chars)");
-            txtPassword.requestFocus();
-            return;
-        }
-
-        progressBar.setVisibility(View.VISIBLE);
-        btnRegister.setEnabled(false);
-
-        // Firebase create
-        auth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
-                    progressBar.setVisibility(View.GONE);
-                    btnRegister.setEnabled(true);
-
-                    if (task.isSuccessful()) {
-                        FirebaseUser firebaseUser = auth.getCurrentUser();
-                        if (firebaseUser == null) {
-                            Toast.makeText(RegisterActivity.this, "Unexpected auth error.", Toast.LENGTH_SHORT).show();
+        setBusy(true);
+        auth.createUserWithEmailAndPassword(email, pass)
+                .addOnCompleteListener(RegisterActivity.this, new OnCompleteListener<AuthResult>() {
+                    @Override public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (!task.isSuccessful()) {
+                            setBusy(false);
+                            toast(task.getException() != null ? task.getException().getMessage() : "Registration failed");
                             return;
                         }
 
-                        String uid = firebaseUser.getUid();
-                        long createdAt = System.currentTimeMillis();
+                        FirebaseUser user = auth.getCurrentUser();
+                        if (user == null) {
+                            setBusy(false);
+                            toast("User not found after registration.");
+                            return;
+                        }
 
-                        // User map
-                        Map<String, Object> user = new HashMap<>();
-                        user.put("name", name);
-                        user.put("email", email);
-                        user.put("role", finalRole);
-                        user.put("phone", phone);
-                        user.put("createdAt", createdAt);
+                        String uid = user.getUid();
+                        Map<String, Object> profile = new HashMap<>();
+                        profile.put("name", name);
+                        profile.put("email", email);
+                        profile.put("phone", phone);
+                        profile.put("role", role);
+                        profile.put("createdAt", System.currentTimeMillis());
 
-                        // Save in DB
-                        usersRef.child(uid).setValue(user)
-                                .addOnCompleteListener(dbTask -> {
-                                    if (dbTask.isSuccessful()) {
-                                        // Try sending verification email
-                                        firebaseUser.sendEmailVerification()
-                                                .addOnCompleteListener(mailTask -> {
-                                                    if (mailTask.isSuccessful()) {
-                                                        Toast.makeText(RegisterActivity.this,
-                                                                "Registered successfully. Verification email sent.",
-                                                                Toast.LENGTH_LONG).show();
-                                                    } else {
-                                                        Toast.makeText(RegisterActivity.this,
-                                                                "Registered, but failed to send verification email.",
-                                                                Toast.LENGTH_LONG).show();
-                                                    }
-
-                                                    // Always sign out after register
-                                                    FirebaseAuth.getInstance().signOut();
-
-                                                    // Redirect to login
-                                                    Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
-                                                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                                                    startActivity(intent);
-                                                    finish();
-                                                });
-
-                                    } else {
-                                        // rollback
-                                        firebaseUser.delete();
-                                        Toast.makeText(RegisterActivity.this,
-                                                "Failed to save profile: " + dbTask.getException().getMessage(),
-                                                Toast.LENGTH_LONG).show();
+                        db.child("users").child(uid).setValue(profile)
+                                .addOnCompleteListener(RegisterActivity.this, new OnCompleteListener<Void>() {
+                                    @Override public void onComplete(@NonNull Task<Void> writeTask) {
+                                        setBusy(false);
+                                        if (writeTask.isSuccessful()) {
+                                            toast("Registration successful. You can log in now.");
+                                            // Optional: send email verification
+                                            // user.sendEmailVerification();
+                                            finish();
+                                        } else {
+                                            toast(writeTask.getException() != null
+                                                    ? writeTask.getException().getMessage()
+                                                    : "Failed to save profile");
+                                        }
                                     }
                                 });
-
-                    } else {
-                        Toast.makeText(RegisterActivity.this,
-                                "Registration failed: " + task.getException().getMessage(),
-                                Toast.LENGTH_LONG).show();
                     }
                 });
+    }
+
+    private String safeTrim(EditText et) {
+        return et.getText() == null ? "" : et.getText().toString().trim();
+    }
+
+    private boolean isValidEmail(String s) {
+        return !TextUtils.isEmpty(s) && Patterns.EMAIL_ADDRESS.matcher(s).matches();
+    }
+
+    private void setBusy(boolean busy) {
+        progressBar.setVisibility(busy ? View.VISIBLE : View.GONE);
+        btnRegister.setEnabled(!busy);
+        btnBackLogin.setEnabled(!busy);
+        txtName.setEnabled(!busy);
+        txtEmail.setEnabled(!busy);
+        txtPassword.setEnabled(!busy);
+        txtPhone.setEnabled(!busy);
+        radioGroupRole.setEnabled(!busy);
+        radioAdmin.setEnabled(!busy);
+        radioTechnician.setEnabled(!busy);
+    }
+
+    private void toast(String m) {
+        Toast.makeText(this, m, Toast.LENGTH_SHORT).show();
     }
 }

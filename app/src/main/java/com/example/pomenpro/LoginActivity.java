@@ -1,168 +1,143 @@
 package com.example.pomenpro;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
+import android.util.Patterns;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.database.*;
 
 public class LoginActivity extends AppCompatActivity {
 
-    private EditText emailEditText, passwordEditText;
-    private Button loginButton, signupButton, forgotPassButton;
+    private EditText txtUsername, txtPassword;
+    private Button btnLogin, btnSignup, btnForgotPass;
 
     private FirebaseAuth auth;
-    private DatabaseReference usersRef;
-    private static final String TAG = "LoginActivity";
+    private DatabaseReference db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // ✅ Make sure your login screen XML file name matches here
+        // Keep it simple; no EdgeToEdge helper to avoid dependency tantrums.
         setContentView(R.layout.activity_login);
 
-        // Firebase
+        // Initialize Firebase (in case you don't do it in Application).
+        FirebaseApp.initializeApp(this);
         auth = FirebaseAuth.getInstance();
-        usersRef = FirebaseDatabase.getInstance().getReference("users");
+        db = FirebaseDatabase.getInstance().getReference();
 
-        // UI refs
-        emailEditText = findViewById(R.id.txtUsername);
-        passwordEditText = findViewById(R.id.txtPassword);
-        loginButton = findViewById(R.id.btnLogin);
-        signupButton = findViewById(R.id.btnSignup);
-        forgotPassButton = findViewById(R.id.btnForgotPass);
+        txtUsername = findViewById(R.id.txtUsername);
+        txtPassword = findViewById(R.id.txtPassword);
+        btnLogin = findViewById(R.id.btnLogin);
+        btnSignup = findViewById(R.id.btnSignup);
+        btnForgotPass = findViewById(R.id.btnForgotPass);
 
-        // 🔑 If a user is already logged in, go straight to dashboard
-        FirebaseUser currentUser = auth.getCurrentUser();
-        if (currentUser != null) {
-            checkUserRoleAndNavigate(currentUser.getUid());
-        }
-
-        // Login button
-        loginButton.setOnClickListener(v -> attemptLogin());
-
-        // Signup button → go to Register
-        signupButton.setOnClickListener(v -> {
-            startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
+        btnLogin.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { doLogin(); }
         });
 
-        // Forgot password button
-        forgotPassButton.setOnClickListener(v -> handleForgotPassword());
+        btnSignup.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
+                // Don't finish; let users come back with Back.
+            }
+        });
+
+        btnForgotPass.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { doReset(); }
+        });
     }
 
-    private void attemptLogin() {
-        String email = emailEditText.getText().toString().trim();
-        String password = passwordEditText.getText().toString().trim();
+    private void doLogin() {
+        String email = safeTrim(txtUsername);
+        String pass = safeTrim(txtPassword);
 
-        if (TextUtils.isEmpty(email)) {
-            emailEditText.setError("Email is required!");
-            emailEditText.requestFocus();
-            return;
-        }
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailEditText.setError("Enter a valid email address!");
-            emailEditText.requestFocus();
-            return;
-        }
-        if (TextUtils.isEmpty(password)) {
-            passwordEditText.setError("Password is required!");
-            passwordEditText.requestFocus();
-            return;
-        }
-        if (password.length() < 6) {
-            passwordEditText.setError("Password must be at least 6 characters!");
-            passwordEditText.requestFocus();
-            return;
-        }
+        if (!isValidEmail(email)) { toast("Enter a valid email."); return; }
+        if (TextUtils.isEmpty(pass)) { toast("Password cannot be empty."); return; }
 
-        auth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, (Task<AuthResult> task) -> {
-                    if (task.isSuccessful()) {
-                        FirebaseUser user = auth.getCurrentUser();
-                        if (user != null) {
-                            checkUserRoleAndNavigate(user.getUid());
+        btnLogin.setEnabled(false);
+        auth.signInWithEmailAndPassword(email, pass)
+                .addOnCompleteListener(LoginActivity.this, new OnCompleteListener<AuthResult>() {
+                    @Override public void onComplete(@NonNull Task<AuthResult> task) {
+                        btnLogin.setEnabled(true);
+
+                        if (!task.isSuccessful()) {
+                            toast(task.getException() != null ? task.getException().getMessage() : "Login failed");
+                            return;
                         }
-                    } else {
-                        Log.w(TAG, "signInWithEmail:failure", task.getException());
-                        Toast.makeText(LoginActivity.this,
-                                "Login failed. Please check your email and password.",
-                                Toast.LENGTH_LONG).show();
+                        if (auth.getCurrentUser() == null) {
+                            toast("User not found after login. Try again.");
+                            return;
+                        }
+
+                        String uid = auth.getCurrentUser().getUid();
+                        db.child("users").child(uid).child("role")
+                                .addListenerForSingleValueEvent(new ValueEventListener() {
+                                    @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                        String role = snapshot.getValue(String.class);
+
+                                        if (role == null) {
+                                            toast("Role not set. Contact admin.");
+                                            auth.signOut();
+                                            return;
+                                        }
+
+                                        if ("admin".equalsIgnoreCase(role)) {
+                                            startActivity(new Intent(LoginActivity.this, AdminDashboardActivity.class));
+                                            finish();
+                                        } else if ("technician".equalsIgnoreCase(role)) {
+                                            startActivity(new Intent(LoginActivity.this, TechnicianDashboardActivity.class));
+                                            finish();
+                                        } else {
+                                            toast("Unrecognized role: " + role);
+                                            auth.signOut();
+                                        }
+                                    }
+
+                                    @Override public void onCancelled(@NonNull DatabaseError error) {
+                                        toast("Failed to read role: " + error.getMessage());
+                                    }
+                                });
                     }
                 });
     }
 
-    private void checkUserRoleAndNavigate(String uid) {
-        usersRef.child(uid).child("role")
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        if (snapshot.exists()) {
-                            String role = snapshot.getValue(String.class);
-                            Log.d(TAG, "Fetched role: " + role); // Debugging
-
-                            if ("admin".equalsIgnoreCase(role)) {
-                                startActivity(new Intent(LoginActivity.this, AdminDashboardActivity.class));
-                                finish();
-                            } else if ("technician".equalsIgnoreCase(role)) {
-                                startActivity(new Intent(LoginActivity.this, TechnicianDashboardActivity.class));
-                                finish();
-                            } else {
-                                Toast.makeText(LoginActivity.this, "User role not recognized.", Toast.LENGTH_SHORT).show();
-                                auth.signOut(); // fallback: log out if role invalid
-                            }
-
-                        } else {
-                            Toast.makeText(LoginActivity.this,
-                                    "User role missing in database. Please contact support.",
-                                    Toast.LENGTH_LONG).show();
-                            auth.signOut();
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        Log.e(TAG, "DB Error fetching role: " + error.getMessage());
-                        Toast.makeText(LoginActivity.this,
-                                "Database Error. Try again later.",
-                                Toast.LENGTH_LONG).show();
+    private void doReset() {
+        String email = safeTrim(txtUsername);
+        if (!isValidEmail(email)) {
+            toast("Enter the email to reset.");
+            return;
+        }
+        auth.sendPasswordResetEmail(email)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) toast("Password reset email sent.");
+                        else toast(task.getException() != null ? task.getException().getMessage() : "Failed to send reset email.");
                     }
                 });
     }
 
+    private String safeTrim(EditText et) {
+        return et.getText() == null ? "" : et.getText().toString().trim();
+    }
 
-    private void handleForgotPassword() {
-        String email = emailEditText.getText().toString().trim();
-        if (TextUtils.isEmpty(email)) {
-            emailEditText.setError("Enter your email to receive the reset link!");
-            emailEditText.requestFocus();
-        } else {
-            auth.sendPasswordResetEmail(email)
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            Toast.makeText(LoginActivity.this,
-                                    "Password reset link sent to your email.",
-                                    Toast.LENGTH_LONG).show();
-                        } else {
-                            Toast.makeText(LoginActivity.this,
-                                    "Failed to send reset email. Check if the email is correct.",
-                                    Toast.LENGTH_LONG).show();
-                        }
-                    });
-        }
+    private boolean isValidEmail(String s) {
+        return !TextUtils.isEmpty(s) && Patterns.EMAIL_ADDRESS.matcher(s).matches();
+    }
+
+    private void toast(String m) {
+        Toast.makeText(this, m, Toast.LENGTH_SHORT).show();
     }
 }

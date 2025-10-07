@@ -224,20 +224,6 @@
         </GridLayout>
 
 
-        <Button
-            android:id="@+id/button2"
-            android:layout_width="150dp"
-            android:layout_height="70dp"
-            android:layout_gravity="center"
-            android:layout_marginLeft="24dp"
-            android:layout_marginTop="30dp"
-            android:layout_marginRight="24dp"
-            android:backgroundTint="@color/oren"
-            android:text="Start Job"
-            android:textSize="23sp"
-            android:textStyle="bold"
-            app:cornerRadius="12dp" />
-
     </LinearLayout>
 
 </RelativeLayout>

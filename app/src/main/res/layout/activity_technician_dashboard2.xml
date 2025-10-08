@@ -38,8 +38,10 @@
                     android:layout_weight="1"
                     android:clickable="true"
                     android:focusable="true"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    app:srcCompat="@drawable/power" />
+                    android:foreground="?android:attr/selectableItemBackgroundBorderless"
+                    android:padding="8dp"
+                    android:contentDescription="Logout"
+                    android:src="@drawable/power" />
             </LinearLayout>
 
             <ImageView

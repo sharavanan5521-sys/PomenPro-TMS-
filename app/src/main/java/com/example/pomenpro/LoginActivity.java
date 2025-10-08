@@ -94,10 +94,7 @@ public class LoginActivity extends AppCompatActivity {
                                             return;
                                         }
 
-                                        if ("admin".equalsIgnoreCase(role)) {
-                                            startActivity(new Intent(LoginActivity.this, AdminDashboardActivity.class));
-                                            finish();
-                                        } else if ("technician".equalsIgnoreCase(role)) {
+                                        if ("technician".equalsIgnoreCase(role)) {
                                             startActivity(new Intent(LoginActivity.this, TechnicianDashboardActivity.class));
                                             finish();
                                         } else {

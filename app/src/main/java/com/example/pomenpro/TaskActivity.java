@@ -39,6 +39,9 @@ public class TaskActivity extends AppCompatActivity {
                     toast("Scan cancelled.");
                     return;
                 }
+                // Debug: show what the app read vs. what it expects
+                System.out.println("DEBUG_MY_UID: [" + myUid + "]");
+                System.out.println("DEBUG_SCANNED: [" + result.getContents() + "]");
                 if (!myUid.equals(result.getContents())) {
                     toast("QR does not match your ID.");
                     return;
@@ -211,4 +214,5 @@ public class TaskActivity extends AppCompatActivity {
         if (jobsQuery != null && jobsListener != null)
             jobsQuery.removeEventListener(jobsListener);
     }
+
 }

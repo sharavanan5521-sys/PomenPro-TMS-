@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.TouchDelegate;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -50,7 +49,6 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
         cvSetting     = findViewById(R.id.cvSetting);
         btnPower      = findViewById(R.id.imageView3);
 
-        // Make the ImageView behave like a proper button (no XML changes)
         makeClickableButtonLike(btnPower);
 
         // Clicks
@@ -60,29 +58,24 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
         cvSetting.setOnClickListener(v -> safeOpen(SettingsActivity.class));
         btnPower.setOnClickListener(v -> confirmSignOut());
 
-        // Load minimal profile + soft role guard
+        // Load minimal profile
         attachProfileMini(me.getUid());
 
-        // Show active task count once
+        // Show active task count
         showMyOpenTaskCount(me.getUid());
     }
 
     private void makeClickableButtonLike(ImageView v) {
-        // 1) Ensure it actually accepts clicks
         v.setClickable(true);
         v.setFocusable(true);
         v.setFocusableInTouchMode(true);
         v.setSoundEffectsEnabled(true);
 
-        // 2) Give it a ripple background programmatically
         TypedValue outValue = new TypedValue();
         boolean ok = getTheme().resolveAttribute(
                 android.R.attr.selectableItemBackgroundBorderless, outValue, true);
-        if (ok && outValue.resourceId != 0) {
-            v.setBackgroundResource(outValue.resourceId);
-        }
+        if (ok && outValue.resourceId != 0) v.setBackgroundResource(outValue.resourceId);
 
-        // 3) Bring above any overlapping views and give it some z
         v.post(() -> {
             v.bringToFront();
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -93,10 +86,8 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
             v.invalidate();
         });
 
-        // 4) Expand tap target without changing layout (40dp padding around)
         v.post(() -> expandTouchArea(v, dp(40)));
 
-        // 5) Safety: if a parent is eating touches, make parent pass them through
         View parent = (View) v.getParent();
         if (parent != null) {
             parent.setClickable(false);
@@ -153,7 +144,9 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
                         int open = 0;
                         for (DataSnapshot s : snap.getChildren()) {
                             String status = s.child("status").getValue(String.class);
-                            if (status == null || "open".equalsIgnoreCase(status) || "in_progress".equalsIgnoreCase(status)) {
+                            // Fixed line: include "pending" instead of "open"
+                            if (status == null || "pending".equalsIgnoreCase(status)
+                                    || "in_progress".equalsIgnoreCase(status)) {
                                 open++;
                             }
                         }
@@ -165,7 +158,7 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
 
     private void safeOpen(Class<?> target) {
         long now = System.currentTimeMillis();
-        if (now - lastClickAt < 500) return; // double-tap prevention
+        if (now - lastClickAt < 500) return;
         lastClickAt = now;
 
         Intent i = new Intent(this, target);
@@ -195,7 +188,9 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
         finish();
     }
 
-    private void toast(String m) { Toast.makeText(this, m, Toast.LENGTH_SHORT).show(); }
+    private void toast(String m) {
+        Toast.makeText(this, m, Toast.LENGTH_SHORT).show();
+    }
 
     @Override
     protected void onDestroy() {

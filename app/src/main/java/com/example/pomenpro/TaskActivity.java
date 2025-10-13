@@ -1,24 +1,214 @@
 package com.example.pomenpro;
 
 import android.os.Bundle;
+import android.widget.ImageView;
+import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.pomenpro.adapters.JobAdapter;
+import com.example.pomenpro.models.Job;
+import com.example.pomenpro.models.JobSession;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.*;
+
+import com.journeyapps.barcodescanner.ScanContract;
+import com.journeyapps.barcodescanner.ScanOptions;
+
+import java.util.*;
 
 public class TaskActivity extends AppCompatActivity {
+
+    private FirebaseAuth auth;
+    private DatabaseReference root;
+
+    private RecyclerView rv;
+    private JobAdapter adapter;
+    private ImageView btnQr;
+
+    private String myUid;
+    private ValueEventListener jobsListener;
+    private Query jobsQuery;
+
+    private final ActivityResultLauncher<ScanOptions> qrLauncher =
+            registerForActivityResult(new ScanContract(), result -> {
+                if (result.getContents() == null) {
+                    toast("Scan cancelled.");
+                    return;
+                }
+                if (!myUid.equals(result.getContents())) {
+                    toast("QR does not match your ID.");
+                    return;
+                }
+                Job selected = adapter.getSelected();
+                if (selected == null) {
+                    toast("Select a task first.");
+                    return;
+                }
+                toggleTimer(selected);
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_task);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
+
+        auth = FirebaseAuth.getInstance();
+        if (auth.getCurrentUser() == null) {
+            toast("Not logged in.");
+            finish();
+            return;
+        }
+        myUid = auth.getCurrentUser().getUid();
+        root = FirebaseDatabase.getInstance().getReference();
+
+        rv = findViewById(R.id.taskRecycleView);
+        btnQr = findViewById(R.id.btnQr);
+
+        adapter = new JobAdapter(this, (j, p) -> {});
+        rv.setLayoutManager(new LinearLayoutManager(this));
+        rv.setAdapter(adapter);
+
+        subscribeJobs();
+
+        btnQr.setOnClickListener(v -> {
+            if (adapter.getSelected() == null) {
+                toast("Select a task first.");
+                return;
+            }
+            ScanOptions opts = new ScanOptions()
+                    .setPrompt("Scan your technician QR ID")
+                    .setBeepEnabled(true)
+                    .setOrientationLocked(true);
+            qrLauncher.launch(opts);
         });
+    }
+
+    private void subscribeJobs() {
+        jobsQuery = root.child("Jobs").orderByChild("assignedTo").equalTo(myUid);
+        jobsListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snap) {
+                List<Job> list = new ArrayList<>();
+                for (DataSnapshot d : snap.getChildren()) {
+                    Job j = d.getValue(Job.class);
+                    if (j != null) j.id = d.getKey();
+                    list.add(j);
+                }
+                adapter.setItems(list);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                toast("Failed to load jobs: " + error.getMessage());
+            }
+        };
+        jobsQuery.addValueEventListener(jobsListener);
+    }
+
+    private void toggleTimer(Job job) {
+        DatabaseReference runPtr = root.child("runningJobSessions").child(job.id).child(myUid);
+        runPtr.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot ds) {
+                if (ds.exists()) {
+                    String sessionId = String.valueOf(ds.getValue());
+                    stopSession(job, sessionId, runPtr);
+                } else {
+                    startSession(job, runPtr);
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                toast("Toggle failed: " + error.getMessage());
+            }
+        });
+    }
+
+    private void startSession(Job job, DatabaseReference runPtr) {
+        long now = System.currentTimeMillis();
+        DatabaseReference sessionRef = root.child("jobSessions").child(job.id).push();
+        JobSession s = new JobSession(myUid, now);
+
+        sessionRef.setValue(s).addOnSuccessListener(a -> {
+            runPtr.setValue(sessionRef.getKey());
+            root.child("Jobs").child(job.id).child("status").setValue("in_progress");
+            toast("Timer started.");
+        }).addOnFailureListener(e -> toast("Failed to start: " + e.getMessage()));
+    }
+
+    private void stopSession(Job job, String sessionId, DatabaseReference runPtr) {
+        DatabaseReference sessionRef = root.child("jobSessions").child(job.id).child(sessionId);
+        sessionRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot ds) {
+                JobSession s = ds.getValue(JobSession.class);
+                if (s == null || s.startTime == 0L) {
+                    toast("Invalid session.");
+                    return;
+                }
+                long now = System.currentTimeMillis();
+                long duration = Math.max(0, now - s.startTime);
+
+                Map<String, Object> upd = new HashMap<>();
+                upd.put("endTime", now);
+                upd.put("durationMs", duration);
+
+                sessionRef.updateChildren(upd).addOnSuccessListener(a -> {
+                    runPtr.removeValue();
+                    root.child("Jobs").child(job.id).child("status").setValue("completed");
+                    bumpPerformance(duration);
+                    toast("Timer stopped: " + format(duration));
+                }).addOnFailureListener(e -> toast("Failed to stop: " + e.getMessage()));
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                toast("Read failed: " + error.getMessage());
+            }
+        });
+    }
+
+    private void bumpPerformance(long durationMs) {
+        DatabaseReference stats = root.child("technicianStats").child(myUid);
+        stats.runTransaction(new Transaction.Handler() {
+            @Override
+            public Transaction.Result doTransaction(MutableData cur) {
+                Long jobs = cur.child("jobsCompleted").getValue(Long.class);
+                Long total = cur.child("totalDurationMs").getValue(Long.class);
+                long j = jobs == null ? 0 : jobs;
+                long t = total == null ? 0 : total;
+                cur.child("jobsCompleted").setValue(j + 1);
+                cur.child("totalDurationMs").setValue(t + durationMs);
+                cur.child("avgDurationMs").setValue((t + durationMs) / (j + 1));
+                return Transaction.success(cur);
+            }
+
+            @Override
+            public void onComplete(DatabaseError e, boolean committed, DataSnapshot s) { }
+        });
+    }
+
+    private String format(long ms) {
+        long sec = ms / 1000;
+        long h = sec / 3600;
+        long m = (sec % 3600) / 60;
+        long s = sec % 60;
+        return String.format("%02d:%02d:%02d", h, m, s);
+    }
+
+    private void toast(String msg) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (jobsQuery != null && jobsListener != null)
+            jobsQuery.removeEventListener(jobsListener);
     }
 }

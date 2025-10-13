@@ -5,6 +5,12 @@
     <!-- Firebase needs the internet, shocking. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Make camera optional so Play Store stops whining -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -47,11 +53,6 @@
         <!-- Register -->
         <activity
             android:name=".RegisterActivity"
-            android:exported="false" />
-
-        <!-- Admin Dashboard -->
-        <activity
-            android:name=".AdminDashboardActivity"
             android:exported="false" />
 
         <!-- Technician Dashboard -->

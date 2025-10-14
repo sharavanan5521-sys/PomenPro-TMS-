@@ -80,6 +80,7 @@
             android:layout_marginTop="8dp"
             android:backgroundTint="#F2691C"
             android:text="Log In"
+            android:textColor="@color/white"
             android:textAlignment="center"
             android:textSize="18sp"
             app:iconPadding="0dp" />
@@ -93,6 +94,7 @@
             android:backgroundTint="#374050"
             android:paddingTop="5dp"
             android:text="Sign Up"
+            android:textColor="@color/white"
             android:textAlignment="center"
             android:textSize="18sp"
             app:iconPadding="0dp" />

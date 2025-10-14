@@ -39,7 +39,7 @@ public class ProfileActivity extends AppCompatActivity {
         ivAvatar = findViewById(R.id.imageView9);
         tvName   = findViewById(R.id.tvName);
         tvEmail  = findViewById(R.id.tvGmail);
-        btnLogout= findViewById(R.id.button);
+        btnLogout= findViewById(R.id.btnLogout);
 
         // Firebase
         auth = FirebaseAuth.getInstance();

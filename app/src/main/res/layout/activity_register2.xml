@@ -28,6 +28,7 @@
                 android:id="@+id/txtName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:textColor="@color/black"
                 android:hint="Full name"
                 android:inputType="textPersonName" />
 
@@ -36,6 +37,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:textColor="@color/black"
                 android:hint="Email"
                 android:inputType="textEmailAddress" />
 
@@ -44,6 +46,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:textColor="@color/black"
                 android:hint="Password (min 6 chars)"
                 android:inputType="textPassword" />
 
@@ -52,6 +55,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:textColor="@color/black"
                 android:hint="Phone (optional)"
                 android:inputType="phone" />
 
@@ -72,16 +76,18 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:buttonTint="@color/oren"
-                    android:text="Admin" />
+                    android:text="Admin"
+                    android:textColorLink="@color/oren" />
 
                 <RadioButton
                     android:id="@+id/radioTechnician"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="20dp"
-                    android:checked="true"
                     android:buttonTint="@color/oren"
-                    android:text="Technician" />
+                    android:checked="true"
+                    android:text="Technician"
+                    android:textColorLink="@color/oren" />
             </RadioGroup>
 
             <ProgressBar
@@ -99,6 +105,7 @@
                 android:layout_marginTop="16dp"
                 android:backgroundTint="@color/oren"
                 app:cornerRadius="15dp"
+                android:textColor="@color/white"
                 android:text="Register" />
 
             <Button
@@ -108,6 +115,7 @@
                 android:layout_marginTop="8dp"
                 android:backgroundTint="@color/dark_oren"
                 app:cornerRadius="15dp"
+                android:textColor="@color/white"
                 android:text="Back to Login" />
 
         </LinearLayout>

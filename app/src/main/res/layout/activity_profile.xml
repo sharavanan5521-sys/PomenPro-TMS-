@@ -185,10 +185,10 @@
                         android:id="@+id/textView15"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textColor="@color/white"
-                        android:textStyle="bold"
-                        android:textSize="18sp"
                         android:text="Phone Number"
+                        android:textColor="@color/white"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
                         app:layout_constraintStart_toEndOf="@+id/imageView15"
                         app:layout_constraintTop_toTopOf="@+id/imageView15" />
 
@@ -257,17 +257,30 @@
             </androidx.cardview.widget.CardView>
 
             <Button
-                android:id="@+id/btnLogout"
+                android:id="@+id/btnEditProfile"
                 android:layout_width="150dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
+                android:backgroundTint="@color/gray"
+                android:text="Edit Profile"
+                android:textColor="@color/white"
+                app:cornerRadius="10dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/cardView3" />
+
+            <Button
+                android:id="@+id/btnLogout"
+                android:layout_width="150dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
                 android:backgroundTint="@color/oren"
                 android:text="Log Out"
                 android:textColor="@color/white"
                 app:cornerRadius="10dp"
-                app:layout_constraintEnd_toEndOf="@+id/cardView3"
-                app:layout_constraintStart_toStartOf="@+id/cardView3"
-                app:layout_constraintTop_toBottomOf="@+id/cardView3" />
+                app:layout_constraintEnd_toEndOf="@+id/btnEditProfile"
+                app:layout_constraintStart_toStartOf="@+id/btnEditProfile"
+                app:layout_constraintTop_toBottomOf="@+id/btnEditProfile" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </LinearLayout>

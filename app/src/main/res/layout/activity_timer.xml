@@ -41,6 +41,17 @@
             android:padding="10dp">
 
             <TextView
+                android:id="@+id/tvRecommendTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Recommended Time : 10 min"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="@+id/textView14"
+                app:layout_constraintStart_toStartOf="@+id/textView14"
+                app:layout_constraintTop_toBottomOf="@+id/textView14" />
+
+            <TextView
                 android:id="@+id/textView14"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -71,6 +82,7 @@
                 android:layout_marginTop="80dp"
                 android:backgroundTint="@color/gray"
                 android:text="Start"
+                android:textColor="@color/white"
                 app:cornerRadius="10dp"
                 app:layout_constraintStart_toStartOf="@+id/timerCount"
                 app:layout_constraintTop_toBottomOf="@+id/timerCount" />
@@ -82,6 +94,7 @@
                 android:layout_marginTop="80dp"
                 android:backgroundTint="@color/gray"
                 android:text="Pause"
+                android:textColor="@color/white"
                 app:cornerRadius="10dp"
                 app:layout_constraintEnd_toEndOf="@+id/timerCount"
                 app:layout_constraintTop_toBottomOf="@+id/timerCount" />
@@ -93,6 +106,7 @@
                 android:layout_marginTop="135dp"
                 android:backgroundTint="@color/blue"
                 android:text="Job On Hold"
+                android:textColor="@color/white"
                 app:cornerRadius="10dp"
                 app:layout_constraintEnd_toEndOf="@+id/btnPause"
                 app:layout_constraintStart_toStartOf="@+id/btnStart"
@@ -104,6 +118,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:text="Job Complete"
+                android:textColor="@color/white"
                 android:backgroundTint="@color/oren"
                 app:cornerRadius="10dp"
                 app:layout_constraintEnd_toEndOf="@+id/btnOnHold"

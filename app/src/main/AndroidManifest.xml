@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-
     <!-- Firebase needs the internet, shocking. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.CAMERA" />
-
-    <!-- Make camera optional so Play Store stops whining -->
+    <uses-permission android:name="android.permission.CAMERA" /> <!-- Make camera optional so Play Store stops whining -->
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
@@ -21,35 +18,44 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.PomenPro">
-
+        <activity
+            android:name=".AboutApp"
+            android:exported="false" />
         <!-- Timer screen -->
         <activity
             android:name=".TimerActivity"
-            android:exported="false" />
-
-        <!-- Splash Screen (Launcher) -->
+            android:exported="false" /> <!-- Splash Screen (Launcher) -->
         <activity
             android:name=".SplashActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity android:name=".SettingsActivity" android:exported="false" />
-        <activity android:name=".TaskActivity" android:exported="false" />
-        <activity android:name=".PerformanceActivity" android:exported="false" />
-        <activity android:name=".ProfileActivity" android:exported="false" />
-        <!-- Login -->
-        <activity android:name=".LoginActivity" android:exported="false" />
-        <!-- Register -->
-        <activity android:name=".RegisterActivity" android:exported="false" />
-        <!-- Technician Dashboard -->
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".TaskActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PerformanceActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false" /> <!-- Login -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false" /> <!-- Register -->
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false" /> <!-- Technician Dashboard -->
         <activity
             android:name=".TechnicianDashboardActivity"
             android:exported="false"
             android:theme="@style/Theme.PomenPro" />
-
     </application>
+
 </manifest>

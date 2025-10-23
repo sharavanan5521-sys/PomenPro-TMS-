@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@color/gray">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Edit Profile"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:textColor="@color/white"
+        android:layout_gravity="center_horizontal"
+        android:paddingBottom="16dp"/>
+
+    <EditText
+        android:id="@+id/etEditName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Full Name"
+        android:textColor="@color/white"
+        android:textColorHint="@color/white"
+        android:inputType="textPersonName"
+        android:backgroundTint="@color/white"
+        android:layout_marginBottom="10dp"/>
+
+    <EditText
+        android:id="@+id/etEditPhone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Phone Number"
+        android:textColor="@color/white"
+        android:textColorHint="@color/white"
+        android:inputType="phone"
+        android:backgroundTint="@color/white"
+        android:layout_marginBottom="10dp"/>
+
+    <EditText
+        android:id="@+id/etEditAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Address"
+        android:textColor="@color/white"
+        android:textColorHint="@color/white"
+        android:inputType="textPostalAddress|textMultiLine"
+        android:lines="3"
+        android:backgroundTint="@color/white"
+        android:layout_marginBottom="20dp"/>
+
+    <ProgressBar
+        android:id="@+id/progressSave"
+        style="?android:attr/progressBarStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/btnSaveChanges"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Save Changes"
+        android:backgroundTint="@color/blue"
+        android:textColor="@color/white" />
+
+</LinearLayout>

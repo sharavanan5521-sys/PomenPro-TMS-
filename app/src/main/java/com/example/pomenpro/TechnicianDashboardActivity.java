@@ -29,6 +29,7 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
 
     private ValueEventListener profileListener;
     private long lastClickAt = 0L;
+    private boolean greeted = false; // ✅ added flag to avoid repeating welcome toast
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,8 +129,14 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
                     signOutAndFinish();
                     return;
                 }
-                if (name != null && !name.isEmpty()) toast("Welcome, " + name);
+
+                // ✅ show welcome toast only once
+                if (!greeted && name != null && !name.isEmpty()) {
+                    toast("Welcome, " + name);
+                    greeted = true;
+                }
             }
+
             @Override public void onCancelled(@NonNull DatabaseError error) {
                 toast("Profile load failed: " + error.getMessage());
             }
@@ -144,7 +151,6 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
                         int open = 0;
                         for (DataSnapshot s : snap.getChildren()) {
                             String status = s.child("status").getValue(String.class);
-                            // Fixed line: include "pending" instead of "open"
                             if (status == null || "pending".equalsIgnoreCase(status)
                                     || "in_progress".equalsIgnoreCase(status)) {
                                 open++;

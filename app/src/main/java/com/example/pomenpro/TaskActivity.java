@@ -1,5 +1,6 @@
 package com.example.pomenpro;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -39,9 +40,10 @@ public class TaskActivity extends AppCompatActivity {
                     toast("Scan cancelled.");
                     return;
                 }
-                // Debug: show what the app read vs. what it expects
+                // Debug lines are fine while testing:
                 System.out.println("DEBUG_MY_UID: [" + myUid + "]");
                 System.out.println("DEBUG_SCANNED: [" + result.getContents() + "]");
+
                 if (!myUid.equals(result.getContents())) {
                     toast("QR does not match your ID.");
                     return;
@@ -112,15 +114,18 @@ public class TaskActivity extends AppCompatActivity {
         jobsQuery.addValueEventListener(jobsListener);
     }
 
+    // After scan, navigate to TimerActivity. Create session if none exists.
     private void toggleTimer(Job job) {
         DatabaseReference runPtr = root.child("runningJobSessions").child(job.id).child(myUid);
         runPtr.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot ds) {
                 if (ds.exists()) {
+                    // Already running: open timer to manage it
                     String sessionId = String.valueOf(ds.getValue());
-                    stopSession(job, sessionId, runPtr);
+                    openTimer(job.id, sessionId, job.displayId, job.serviceType, job.vehicleNo);
                 } else {
+                    // Not running: create a new session and go
                     startSession(job, runPtr);
                 }
             }
@@ -132,18 +137,27 @@ public class TaskActivity extends AppCompatActivity {
         });
     }
 
+    // Create session with extra fields and navigate to TimerActivity
     private void startSession(Job job, DatabaseReference runPtr) {
         long now = System.currentTimeMillis();
         DatabaseReference sessionRef = root.child("jobSessions").child(job.id).push();
-        JobSession s = new JobSession(myUid, now);
 
-        sessionRef.setValue(s).addOnSuccessListener(a -> {
+        Map<String, Object> session = new HashMap<>();
+        session.put("technicianId", myUid);
+        session.put("startTime", now);
+        session.put("lastStart", now);        // current run start
+        session.put("accumulatedMs", 0L);     // accumulated time
+        session.put("state", "running");      // running|paused|done
+
+        sessionRef.setValue(session).addOnSuccessListener(a -> {
             runPtr.setValue(sessionRef.getKey());
             root.child("Jobs").child(job.id).child("status").setValue("in_progress");
             toast("Timer started.");
+            openTimer(job.id, sessionRef.getKey(), job.displayId, job.serviceType, job.vehicleNo);
         }).addOnFailureListener(e -> toast("Failed to start: " + e.getMessage()));
     }
 
+    // Optional legacy stop; TimerActivity handles completion now.
     private void stopSession(Job job, String sessionId, DatabaseReference runPtr) {
         DatabaseReference sessionRef = root.child("jobSessions").child(job.id).child(sessionId);
         sessionRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -174,6 +188,17 @@ public class TaskActivity extends AppCompatActivity {
                 toast("Read failed: " + error.getMessage());
             }
         });
+    }
+
+    // NEW: helper to launch TimerActivity with context
+    private void openTimer(String jobId, String sessionId, String displayId, String serviceType, String vehicleNo) {
+        Intent i = new Intent(this, TimerActivity.class);
+        i.putExtra("jobId", jobId);
+        i.putExtra("sessionId", sessionId);
+        if (displayId != null)   i.putExtra("displayId", displayId);
+        if (serviceType != null) i.putExtra("serviceType", serviceType);
+        if (vehicleNo != null)   i.putExtra("vehicleNo", vehicleNo);
+        startActivity(i);
     }
 
     private void bumpPerformance(long durationMs) {
@@ -214,5 +239,4 @@ public class TaskActivity extends AppCompatActivity {
         if (jobsQuery != null && jobsListener != null)
             jobsQuery.removeEventListener(jobsListener);
     }
-
 }

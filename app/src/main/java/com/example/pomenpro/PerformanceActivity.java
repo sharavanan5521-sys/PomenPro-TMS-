@@ -21,18 +21,14 @@ public class PerformanceActivity extends AppCompatActivity {
 
     private TextView tvPerProductivity, tvPerEfficiency, tvPerProficiency;
     private ImageView btnHome;
-    private ImageView ivBadges; // ← badge target
+    private ImageView ivBadges; // badge target
 
     private FirebaseAuth auth;
     private DatabaseReference rootRef;
 
     private long startMs, endMs;
 
-    // -------- Badge thresholds (edit these if your ego demands different numbers) --------
-    // score < 60  -> iron
-    // 60..74      -> bronze
-    // 75..89      -> silver
-    // >= 90       -> gold
+    // Badge thresholds
     private static final int T_BRONZE = 60;
     private static final int T_SILVER = 75;
     private static final int T_GOLD   = 90;
@@ -94,58 +90,61 @@ public class PerformanceActivity extends AppCompatActivity {
                     return;
                 }
 
-                final int[] assignedToday = {0};
-                final int[] completedToday = {0};
-                final int[] firstTryCompleted = {0};
-                final long[] sumEstMinCompleted = {0};
-                final long[] sumActualMinCompleted = {0};
-
                 final int totalJobs = (int) jobsSnap.getChildrenCount();
                 final int[] processedJobs = {0};
 
+                // Counters
+                final int[] touchedToday = {0};           // jobs with any session today by this tech
+                final int[] completedToday = {0};         // jobs finished today (status + session)
+                final int[] firstTryCompleted = {0};      // finished with exactly 1 session ever
+                final long[] sumEstMinCompleted = {0};    // planned minutes for completed jobs
+                final long[] sumActualMinCompleted = {0}; // actual minutes today for completed jobs
+
                 for (DataSnapshot job : jobsSnap.getChildren()) {
                     String jobId = job.getKey();
-                    Long createdAt = getLong(job.child("createdAt").getValue());
-                    if (createdAt != null && createdAt >= startMs && createdAt < endMs) {
-                        assignedToday[0]++;
-                    }
-
                     String status = asString(job.child("status").getValue());
                     boolean statusCompleted = isCompletedWord(status);
-
                     Long estMinutes = getLong(job.child("estMinutes").getValue());
 
                     rootRef.child("jobSessions").child(jobId)
                             .addListenerForSingleValueEvent(new ValueEventListener() {
                                 @Override public void onDataChange(@NonNull DataSnapshot sessionsSnap) {
-                                    boolean jobCompletedToday = false;
+                                    boolean anySessionTodayByTech = false;
+                                    boolean completedTodayBySession = false;
                                     long totalDurMinTodayForJob = 0;
-                                    int totalSessionsEver = (int) sessionsSnap.getChildrenCount();
+                                    int totalSessionsEver = 0;
 
-                                    Set<String> sessionIds = new HashSet<>();
                                     for (DataSnapshot session : sessionsSnap.getChildren()) {
-                                        sessionIds.add(session.getKey());
+                                        totalSessionsEver++;
                                         String sessionTech = asString(session.child("technicianId").getValue());
                                         if (!uid.equals(sessionTech)) continue;
 
                                         Long endTime = getLong(session.child("endTime").getValue());
                                         Long durationMs = getLong(session.child("durationMs").getValue());
+                                        Long startTime = getLong(session.child("startTime").getValue());
 
                                         if (endTime != null && endTime >= startMs && endTime < endMs) {
-                                            jobCompletedToday = true;
-                                            long durMin = durationMs != null ? Math.max(1, durationMs / 60000L) : 0;
+                                            anySessionTodayByTech = true;
+                                            completedTodayBySession = true; // session ended today
+                                            long durMin = computeDurationMin(durationMs, startTime, endTime);
+                                            totalDurMinTodayForJob += durMin;
+                                        } else if (startTime != null && startTime >= startMs && startTime < endMs) {
+                                            anySessionTodayByTech = true; // started today but maybe not ended
+                                            long durMin = computeDurationMin(durationMs, startTime, endTime);
                                             totalDurMinTodayForJob += durMin;
                                         }
                                     }
 
-                                    if (jobCompletedToday && statusCompleted) {
-                                        completedToday[0]++;
+                                    if (anySessionTodayByTech) {
+                                        touchedToday[0]++;
+                                    }
 
+                                    if (completedTodayBySession && statusCompleted) {
+                                        completedToday[0]++;
                                         if (estMinutes != null) {
                                             sumEstMinCompleted[0] += Math.max(0, estMinutes);
-                                            sumActualMinCompleted[0] += Math.max(1, totalDurMinTodayForJob);
                                         }
-
+                                        sumActualMinCompleted[0] += Math.max(1, totalDurMinTodayForJob);
                                         if (totalSessionsEver == 1) {
                                             firstTryCompleted[0]++;
                                         }
@@ -153,8 +152,8 @@ public class PerformanceActivity extends AppCompatActivity {
 
                                     processedJobs[0]++;
                                     if (processedJobs[0] == totalJobs) {
-                                        int productivity = assignedToday[0] > 0
-                                                ? clamp((int) Math.round(completedToday[0] * 100.0 / assignedToday[0]))
+                                        int productivity = touchedToday[0] > 0
+                                                ? clamp((int) Math.round(completedToday[0] * 100.0 / touchedToday[0]))
                                                 : 0;
 
                                         int efficiency = sumActualMinCompleted[0] > 0
@@ -186,20 +185,27 @@ public class PerformanceActivity extends AppCompatActivity {
         });
     }
 
+    private static long computeDurationMin(Long durationMs, Long startTime, Long endTime) {
+        if (durationMs != null) {
+            return Math.max(1, durationMs / 60000L);
+        }
+        if (startTime != null && endTime != null && endTime >= startTime) {
+            return Math.max(1, (endTime - startTime) / 60000L);
+        }
+        return 0;
+    }
+
     private void setPercentages(int prod, int eff, int prof) {
         tvPerProductivity.setText(prod + "%");
         tvPerEfficiency.setText(eff + "%");
         tvPerProficiency.setText(prof + "%");
 
-        // Compute overall score and update badge
         int overall = Math.round((prod + eff + prof) / 3.0f);
         updateBadge(overall);
     }
 
-    // ---------- Badge logic ----------
     private void updateBadge(int score) {
-        if (ivBadges == null) return; // XML went rogue? Fine, we bail.
-
+        if (ivBadges == null) return;
         int resId;
         if (score >= T_GOLD) {
             resId = R.drawable.badges_gold;

@@ -21,11 +21,21 @@ public class PerformanceActivity extends AppCompatActivity {
 
     private TextView tvPerProductivity, tvPerEfficiency, tvPerProficiency;
     private ImageView btnHome;
+    private ImageView ivBadges; // ← badge target
 
     private FirebaseAuth auth;
     private DatabaseReference rootRef;
 
     private long startMs, endMs;
+
+    // -------- Badge thresholds (edit these if your ego demands different numbers) --------
+    // score < 60  -> iron
+    // 60..74      -> bronze
+    // 75..89      -> silver
+    // >= 90       -> gold
+    private static final int T_BRONZE = 60;
+    private static final int T_SILVER = 75;
+    private static final int T_GOLD   = 90;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +46,7 @@ public class PerformanceActivity extends AppCompatActivity {
         tvPerEfficiency   = findViewById(R.id.tvPerEfficiency);
         tvPerProficiency  = findViewById(R.id.tvPerProficiency);
         btnHome           = findViewById(R.id.btnhome);
+        ivBadges          = findViewById(R.id.ivbadges);
 
         auth = FirebaseAuth.getInstance();
         rootRef = FirebaseDatabase.getInstance().getReference();
@@ -179,6 +190,28 @@ public class PerformanceActivity extends AppCompatActivity {
         tvPerProductivity.setText(prod + "%");
         tvPerEfficiency.setText(eff + "%");
         tvPerProficiency.setText(prof + "%");
+
+        // Compute overall score and update badge
+        int overall = Math.round((prod + eff + prof) / 3.0f);
+        updateBadge(overall);
+    }
+
+    // ---------- Badge logic ----------
+    private void updateBadge(int score) {
+        if (ivBadges == null) return; // XML went rogue? Fine, we bail.
+
+        int resId;
+        if (score >= T_GOLD) {
+            resId = R.drawable.badges_gold;
+        } else if (score >= T_SILVER) {
+            resId = R.drawable.badges_silver;
+        } else if (score >= T_BRONZE) {
+            resId = R.drawable.badges_bronze;
+        } else {
+            resId = R.drawable.badges_iron;
+        }
+        ivBadges.setImageResource(resId);
+        ivBadges.setContentDescription("Badge score " + score);
     }
 
     private static boolean isCompletedWord(String s) {

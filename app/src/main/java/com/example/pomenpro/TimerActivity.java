@@ -26,6 +26,7 @@ import java.util.Map;
 public class TimerActivity extends AppCompatActivity {
 
     private TextView tvTimer;                 // timerCount in your XML
+    private TextView tvRecommend;             // tvRecommendTime in your XML
     private Button btnStart, btnPause, btnHold, btnComplete;
 
     private String myUid;
@@ -74,6 +75,7 @@ public class TimerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_timer);
 
         tvTimer      = findViewById(R.id.timerCount);
+        tvRecommend  = findViewById(R.id.tvRecommendTime);
         btnStart     = findViewById(R.id.btnStart);
         btnPause     = findViewById(R.id.btnPause);
         btnHold      = findViewById(R.id.btnOnHold);
@@ -129,6 +131,40 @@ public class TimerActivity extends AppCompatActivity {
             }
         };
         sessionRef.addValueEventListener(sessionListener);
+
+        // Bind recommended time from the Job node (non-destructive)
+        jobRef.addValueEventListener(new ValueEventListener() {
+            @Override public void onDataChange(DataSnapshot ds) {
+                if (!ds.exists()) return;
+
+                // Try milliseconds first: Jobs/{jobId}/estimatedDurationMs
+                Long estMs = ds.child("estimatedDurationMs").getValue(Long.class);
+                if (estMs != null && estMs > 0) {
+                    long mins = Math.max(1, Math.round(estMs / 60000f));
+                    tvRecommend.setText("Recommended Time : " + mins + " min");
+                    return;
+                }
+
+                // Try numeric minutes: estimatedMinutes or estimatedDuration
+                Long estMins = ds.child("estimatedMinutes").getValue(Long.class);
+                if (estMins == null) estMins = ds.child("estimatedDuration").getValue(Long.class);
+                if (estMins != null && estMins > 0) {
+                    tvRecommend.setText("Recommended Time : " + estMins + " min");
+                    return;
+                }
+
+                // Try string like "30" or "30 min" in estimatedDuration
+                String estStr = ds.child("estimatedDuration").getValue(String.class);
+                if (estStr != null) {
+                    String digitsOnly = estStr.replaceAll("[^0-9]", "");
+                    if (!digitsOnly.isEmpty()) {
+                        tvRecommend.setText("Recommended Time : " + digitsOnly + " min");
+                    }
+                }
+                // else: leave whatever default text was defined in XML
+            }
+            @Override public void onCancelled(DatabaseError error) { /* ignore */ }
+        });
 
         // Buttons
         btnStart.setOnClickListener(v -> resumeRun());
@@ -224,7 +260,6 @@ public class TimerActivity extends AppCompatActivity {
             finish();
         }).addOnFailureListener(e -> toast("Complete failed: " + e.getMessage()));
     }
-
 
     private String format(long ms) {
         long s = ms / 1000;

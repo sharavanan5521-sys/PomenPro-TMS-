@@ -16,6 +16,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.*;
 
 import java.util.Calendar;
+import java.util.Locale;
 import java.util.TimeZone;
 
 public class PerformanceActivity extends AppCompatActivity {
@@ -29,7 +30,6 @@ public class PerformanceActivity extends AppCompatActivity {
 
     private long startMs, endMs;
 
-    // Visible thresholds remain the same; tier logic is enforced with gates in updateBadgeWeighted.
     private static final int T_BRONZE = 60;
     private static final int T_SILVER = 75;
     private static final int T_GOLD   = 90;
@@ -100,21 +100,21 @@ public class PerformanceActivity extends AppCompatActivity {
                 final int totalJobs = (int) jobsSnap.getChildrenCount();
                 final int[] processedJobs = {0};
 
-                // Counters
                 final int[] touchedToday = {0};
                 final int[] completedToday = {0};
                 final int[] firstTryCompleted = {0};
 
-                // Efficiency sums (valid estimate only)
                 final long[] sumEstMinCompleted = {0};
-                final long[] sumActualMinCompleted = {0};
+                final long[] sumActualMinTodayCompleted = {0};
                 final int[]  effJobCount = {0};
 
                 for (DataSnapshot job : jobsSnap.getChildren()) {
                     String jobId = job.getKey();
                     final String status = asString(job.child("status").getValue());
                     final boolean statusCompleted = isCompletedWord(status);
-                    final Long estMinutesRaw = getLong(job.child("estMinutes").getValue());
+
+                    // IMPORTANT: now supports your key `estimatedDurationMinutes`
+                    final Long estMinutesRaw = parseEstimatedMinutes(job);
 
                     rootRef.child("jobSessions").child(jobId)
                             .addListenerForSingleValueEvent(new ValueEventListener() {
@@ -122,7 +122,8 @@ public class PerformanceActivity extends AppCompatActivity {
                                     boolean anySessionTodayByTech = false;
                                     boolean endedTodayByThisTech = false;
 
-                                    long totalDurMinAllForJobByTech = 0; // all time, this tech
+                                    long totalDurMinAllForJobByTech = 0;
+                                    long totalDurMinTodayForJobByTech = 0;
                                     int sessionsEverByThisTech = 0;
 
                                     for (DataSnapshot session : sessionsSnap.getChildren()) {
@@ -131,17 +132,23 @@ public class PerformanceActivity extends AppCompatActivity {
 
                                         sessionsEverByThisTech++;
 
-                                        Long endTime = getLong(session.child("endTime").getValue());
-                                        Long durationMs = getLong(session.child("durationMs").getValue());
-                                        Long startTime = getLong(session.child("startTime").getValue());
+                                        Long rawDuration = getLong(session.child("durationMs").getValue());
+                                        Long rawStart    = getLong(session.child("startTime").getValue());
+                                        Long rawEnd      = getLong(session.child("endTime").getValue());
 
-                                        long durMin = computeDurationMin(durationMs, startTime, endTime);
-                                        totalDurMinAllForJobByTech += Math.max(0, durMin);
+                                        long[] bounds = deriveBounds(rawDuration, rawStart, rawEnd);
+                                        long s = bounds[0], e = bounds[1];
 
-                                        boolean endedToday = (endTime != null && endTime >= startMs && endTime < endMs);
-                                        boolean startedToday = (startTime != null && startTime >= startMs && startTime < endMs);
+                                        long durMinAll = (e > s) ? Math.max(1, (e - s) / 60000L) : 0;
+                                        totalDurMinAllForJobByTech += Math.max(0, durMinAll);
 
-                                        if (endedToday || startedToday) anySessionTodayByTech = true;
+                                        long overlapMs = overlapMillis(s, e, startMs, endMs);
+                                        if (overlapMs > 0) {
+                                            anySessionTodayByTech = true;
+                                            totalDurMinTodayForJobByTech += Math.max(1, overlapMs / 60000L);
+                                        }
+
+                                        boolean endedToday = (e >= startMs && e < endMs);
                                         if (endedToday) endedTodayByThisTech = true;
                                     }
 
@@ -150,9 +157,14 @@ public class PerformanceActivity extends AppCompatActivity {
                                     if (statusCompleted && endedTodayByThisTech) {
                                         completedToday[0]++;
 
-                                        if (estMinutesRaw != null && estMinutesRaw > 0 && totalDurMinAllForJobByTech > 0) {
-                                            sumEstMinCompleted[0] += estMinutesRaw;
-                                            sumActualMinCompleted[0] += totalDurMinAllForJobByTech;
+                                        // use today's minutes; if zero, fall back to lifetime minutes on finish day
+                                        long actualForEff = (totalDurMinTodayForJobByTech > 0)
+                                                ? totalDurMinTodayForJobByTech
+                                                : totalDurMinAllForJobByTech;
+
+                                        if (estMinutesRaw != null && estMinutesRaw > 0 && actualForEff > 0) {
+                                            sumEstMinCompleted[0]        += estMinutesRaw;
+                                            sumActualMinTodayCompleted[0] += actualForEff;
                                             effJobCount[0]++;
                                         }
 
@@ -167,8 +179,9 @@ public class PerformanceActivity extends AppCompatActivity {
                                                 ? clamp((int) Math.round(completedToday[0] * 100.0 / touchedToday[0]))
                                                 : 0;
 
-                                        int efficiency = (effJobCount[0] > 0 && sumActualMinCompleted[0] > 0)
-                                                ? clamp((int) Math.round(sumEstMinCompleted[0] * 100.0 / sumActualMinCompleted[0]))
+                                        int efficiency = (effJobCount[0] > 0 && sumActualMinTodayCompleted[0] > 0)
+                                                ? clamp((int) Math.round(
+                                                (sumEstMinCompleted[0] * 100.0) / sumActualMinTodayCompleted[0]))
                                                 : 0;
 
                                         int proficiency = completedToday[0] > 0
@@ -196,14 +209,34 @@ public class PerformanceActivity extends AppCompatActivity {
         });
     }
 
-    private static long computeDurationMin(Long durationMs, Long startTime, Long endTime) {
-        if (durationMs != null) {
-            return Math.max(1, durationMs / 60000L);
-        }
-        if (startTime != null && endTime != null && endTime >= startTime) {
-            return Math.max(1, (endTime - startTime) / 60000L);
-        }
-        return 0;
+    // ---------- Helpers ----------
+
+    private static Long normalizeEpochMs(Long t) {
+        if (t == null) return null;
+        return (t < 1_000_000_000_000L) ? t * 1000L : t;
+    }
+
+    private static Long normalizeDurationMs(Long d) {
+        if (d == null) return null;
+        if (d < 600_000L) return d * 60_000L; // small numbers likely minutes → ms
+        return d;
+    }
+
+    private long[] deriveBounds(Long rawDurationMs, Long rawStart, Long rawEnd) {
+        Long s = normalizeEpochMs(rawStart);
+        Long e = normalizeEpochMs(rawEnd);
+        Long d = normalizeDurationMs(rawDurationMs);
+
+        if (s != null && e != null && e >= s) return new long[]{s, e};
+        if (e != null && d != null && d > 0)  return new long[]{Math.max(0, e - d), e};
+        if (s != null && d != null && d > 0)  return new long[]{s, s + d};
+        return new long[]{0, 0};
+    }
+
+    private long overlapMillis(long aStart, long aEnd, long bStart, long bEnd) {
+        long start = Math.max(aStart, bStart);
+        long end   = Math.min(aEnd, bEnd);
+        return Math.max(0, end - start);
     }
 
     private void setPercentages(int prod, int eff, int prof) {
@@ -211,36 +244,29 @@ public class PerformanceActivity extends AppCompatActivity {
         tvPerEfficiency.setText(eff + "%");
         tvPerProficiency.setText(prof + "%");
 
-        // New: weighted score
         int overallWeighted = clamp(Math.round(
                 0.30f * prod +
                         0.40f * eff +
                         0.30f * prof
         ));
 
-        // If literally nothing happened, iron.
         if (prod == 0 && eff == 0 && prof == 0) {
             updateBadgeResource("iron");
             return;
         }
 
-        // Enforce floor gates per tier using caps so a weak metric blocks higher tiers.
         int minMetric = Math.min(prod, Math.min(eff, prof));
         if (minMetric < 40) {
-            // cannot reach bronze
             overallWeighted = Math.min(overallWeighted, T_BRONZE - 1);
         } else if (minMetric < 65) {
-            // cannot reach silver
             overallWeighted = Math.min(overallWeighted, T_SILVER - 1);
         } else if (minMetric < 80) {
-            // cannot reach gold
             overallWeighted = Math.min(overallWeighted, T_GOLD - 1);
         }
 
         updateBadge(overallWeighted);
     }
 
-    // Keeps the public updateBadge(int) so your layouts/resources stay the same.
     private void updateBadge(int score) {
         if (ivBadges == null) return;
         if (score >= T_GOLD) {
@@ -269,7 +295,7 @@ public class PerformanceActivity extends AppCompatActivity {
 
     private static boolean isCompletedWord(String s) {
         if (s == null) return false;
-        s = s.trim().toLowerCase();
+        s = s.trim().toLowerCase(Locale.US).replaceAll("[^a-z]", "");
         return s.equals("completed") || s.equals("done");
     }
 
@@ -282,6 +308,80 @@ public class PerformanceActivity extends AppCompatActivity {
         if (v != null) {
             try { return Long.parseLong(String.valueOf(v)); } catch (Exception ignored) {}
         }
+        return null;
+    }
+
+    // Reads minutes from your DB without renaming anything.
+    private static Long parseEstimatedMinutes(DataSnapshot jobSnap) {
+        // Include your key: estimatedDurationMinutes
+        Object v = firstNonNull(
+                jobSnap.child("estMinutes").getValue(),
+                jobSnap.child("estimatedMinutes").getValue(),
+                jobSnap.child("estimatedDurationMinutes").getValue(),  // <- your field
+                jobSnap.child("estMin").getValue(),
+                jobSnap.child("estDurationMin").getValue(),
+                jobSnap.child("estimateMin").getValue(),
+                jobSnap.child("est_time_min").getValue(),
+                // common “suggested timer” style keys if present
+                jobSnap.child("suggestedDurationMinutes").getValue(),
+                jobSnap.child("suggestedMinutes").getValue(),
+                jobSnap.child("suggestedTimer").getValue()
+        );
+
+        Long fromPlain = tryParsePlainMinutes(v);
+        if (fromPlain != null && fromPlain > 0) return fromPlain;
+
+        Object vHr = firstNonNull(
+                jobSnap.child("estHours").getValue(),
+                jobSnap.child("estimatedHours").getValue(),
+                jobSnap.child("suggestedHours").getValue()
+        );
+        Long hrsPlain = tryParsePlainMinutes(vHr);
+        if (hrsPlain != null && hrsPlain > 0) return hrsPlain * 60;
+
+        String s = String.valueOf(v == null ? "" : v).trim().toLowerCase(Locale.US);
+        if (s.isEmpty()) return null;
+
+        try {
+            long totalMin = 0;
+            if (s.contains("h")) {
+                String[] parts = s.split("h", 2);
+                double h = Double.parseDouble(parts[0].trim());
+                totalMin += Math.round(h * 60.0);
+                String after = parts.length > 1 ? parts[1].trim() : "";
+                if (after.endsWith("m")) after = after.substring(0, after.length() - 1).trim();
+                if (!after.isEmpty()) totalMin += Math.round(Double.parseDouble(after));
+                return totalMin > 0 ? totalMin : null;
+            }
+            if (s.endsWith("m") || s.contains("min")) {
+                s = s.replace("min", "").replace("m", "").trim();
+                long m = Math.round(Double.parseDouble(s));
+                return m > 0 ? m : null;
+            }
+            long m = Math.round(Double.parseDouble(s));
+            return m > 0 ? m : null;
+        } catch (Exception ignore) {
+            return null;
+        }
+    }
+
+    private static Object firstNonNull(Object... vals) {
+        for (Object o : vals) if (o != null) return o;
+        return null;
+    }
+
+    private static Long tryParsePlainMinutes(Object v) {
+        if (v == null) return null;
+        if (v instanceof Long) return (Long) v;
+        if (v instanceof Integer) return ((Integer) v).longValue();
+        if (v instanceof Double) return Math.round((Double) v);
+        try {
+            String s = String.valueOf(v).trim();
+            if (s.matches("^\\d+(\\.\\d+)?$")) {
+                double d = Double.parseDouble(s);
+                return Math.round(d); // assume minutes
+            }
+        } catch (Exception ignore) {}
         return null;
     }
 

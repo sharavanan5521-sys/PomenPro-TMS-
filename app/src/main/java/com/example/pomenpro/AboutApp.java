@@ -4,10 +4,12 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.Window;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 public class AboutApp extends AppCompatActivity {
 
@@ -41,5 +43,11 @@ public class AboutApp extends AppCompatActivity {
         TextView tvCopyright = findViewById(R.id.textView20);
         int year = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
         tvCopyright.setText("© " + year + " Pomen Pro");
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Window window = getWindow();
+            window.setStatusBarColor(ContextCompat.getColor(this, R.color.dark_oren)); // your top bar color
+            window.setNavigationBarColor(ContextCompat.getColor(this, R.color.dark_oren)); // your bottom bar color
+        }
     }
 }

@@ -1,13 +1,16 @@
 package com.example.pomenpro;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.Window;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.*;
@@ -60,6 +63,12 @@ public class PerformanceActivity extends AppCompatActivity {
 
         computeTodayWindow();
         loadTodayPerformance();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Window window = getWindow();
+            window.setStatusBarColor(ContextCompat.getColor(this, R.color.dark_oren)); // your top bar color
+            window.setNavigationBarColor(ContextCompat.getColor(this, R.color.dark_oren)); // your bottom bar color
+        }
     }
 
     private void computeTodayWindow() {

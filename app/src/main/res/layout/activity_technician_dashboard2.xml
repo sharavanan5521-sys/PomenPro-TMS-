@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
-    android:layout_width="wrap_content"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/black"
     tools:context=".TechnicianDashboardActivity">
@@ -15,6 +15,7 @@
         android:layout_height="wrap_content"
         android:background="@drawable/home_bg"
         android:orientation="vertical"
+        android:gravity="center_horizontal"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -56,19 +57,20 @@
 
 
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="80dp"
+            android:layout_gravity="center_horizontal">
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/cvHome"
                 android:layout_width="150dp"
                 android:layout_height="150dp"
-                android:layout_marginStart="35dp"
-                android:layout_marginTop="50dp"
                 android:backgroundTint="@color/white"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?android:attr/selectableItemBackground"
+                android:foregroundGravity="center_vertical"
                 app:cardCornerRadius="15dp"
                 app:cardElevation="6dp"
                 app:layout_constraintStart_toStartOf="parent"
@@ -77,6 +79,7 @@
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:layout_gravity="center"
                     android:gravity="center"
                     android:orientation="vertical">
 
@@ -111,16 +114,16 @@
                 android:id="@+id/cvSetting"
                 android:layout_width="150dp"
                 android:layout_height="150dp"
-                android:layout_marginTop="50dp"
-                android:layout_marginEnd="35dp"
+                android:layout_marginStart="30dp"
                 android:backgroundTint="@color/white"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="15dp"
                 app:cardElevation="6dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
+                app:layout_constraintBottom_toBottomOf="@+id/cvHome"
+                app:layout_constraintStart_toEndOf="@+id/cvHome"
+                app:layout_constraintTop_toTopOf="@+id/cvHome">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -207,16 +210,16 @@
                 android:id="@+id/cvPerformance"
                 android:layout_width="150dp"
                 android:layout_height="150dp"
-                android:layout_marginTop="20dp"
+                android:layout_marginStart="30dp"
                 android:backgroundTint="@color/white"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="15dp"
                 app:cardElevation="6dp"
-                app:layout_constraintEnd_toEndOf="@+id/cvSetting"
-                app:layout_constraintStart_toStartOf="@+id/cvSetting"
-                app:layout_constraintTop_toBottomOf="@+id/cvSetting">
+                app:layout_constraintBottom_toBottomOf="@+id/cvTask"
+                app:layout_constraintStart_toEndOf="@+id/cvTask"
+                app:layout_constraintTop_toTopOf="@+id/cvTask">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"

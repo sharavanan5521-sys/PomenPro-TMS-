@@ -135,7 +135,7 @@ public class TimerActivity extends AppCompatActivity {
         };
         sessionRef.addValueEventListener(sessionListener);
 
-        // Bind recommended time from the Job node (non-destructive)
+        // Bind recommended time from the Job node (now includes estimatedDurationMinutes)
         jobRef.addValueEventListener(new ValueEventListener() {
             @Override public void onDataChange(DataSnapshot ds) {
                 if (!ds.exists()) return;
@@ -148,8 +148,12 @@ public class TimerActivity extends AppCompatActivity {
                     return;
                 }
 
-                // Try numeric minutes: estimatedMinutes or estimatedDuration
-                Long estMins = ds.child("estimatedMinutes").getValue(Long.class);
+                // Try numeric minutes:
+                // 1) estimatedDurationMinutes (your actual field)
+                // 2) estimatedMinutes
+                // 3) estimatedDuration (when it’s stored as a number)
+                Long estMins = ds.child("estimatedDurationMinutes").getValue(Long.class);
+                if (estMins == null) estMins = ds.child("estimatedMinutes").getValue(Long.class);
                 if (estMins == null) estMins = ds.child("estimatedDuration").getValue(Long.class);
                 if (estMins != null && estMins > 0) {
                     tvRecommend.setText("Recommended Time : " + estMins + " min");

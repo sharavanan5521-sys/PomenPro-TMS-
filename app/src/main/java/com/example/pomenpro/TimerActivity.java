@@ -1,14 +1,17 @@
 package com.example.pomenpro;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -171,6 +174,12 @@ public class TimerActivity extends AppCompatActivity {
         btnPause.setOnClickListener(v -> pauseRun(false));
         btnHold.setOnClickListener(v -> pauseRun(true));
         btnComplete.setOnClickListener(v -> launchCompleteQr());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Window window = getWindow();
+            window.setStatusBarColor(ContextCompat.getColor(this, R.color.dark_oren)); // your top bar color
+            window.setNavigationBarColor(ContextCompat.getColor(this, R.color.dark_oren)); // your bottom bar color
+        }
     }
 
     @Override protected void onResume() { super.onResume(); tick.post(ticker); }

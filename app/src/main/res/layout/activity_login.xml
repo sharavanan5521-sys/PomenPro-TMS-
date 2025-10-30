@@ -9,22 +9,27 @@
     android:background="@color/dark_oren"
     tools:context=".LoginActivity">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/loginCard"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@drawable/bground"
-        android:gravity="center"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/constraintLayout2"
             android:layout_width="385dp"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="180dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
                 android:id="@+id/imgLogo"
@@ -39,10 +44,15 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/constraintLayout"
-            android:layout_width="match_parent"
+            android:id="@+id/clLogin"
+            android:layout_width="350dp"
             android:layout_height="wrap_content"
-            android:padding="30dp">
+            android:layout_margin="20dp"
+            android:background="@drawable/login_card"
+            android:padding="30dp"
+            app:layout_constraintEnd_toEndOf="@+id/constraintLayout2"
+            app:layout_constraintStart_toStartOf="@+id/constraintLayout2"
+            app:layout_constraintTop_toBottomOf="@+id/constraintLayout2">
 
             <EditText
                 android:id="@+id/txtUsername"
@@ -52,7 +62,7 @@
                 android:hint="Email"
                 android:inputType="textEmailAddress"
                 android:padding="16dp"
-                android:textColor="#FAFAFA"
+                android:textColor="@color/black"
                 android:textColorHint="#737272"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -65,10 +75,10 @@
                 android:background="@android:color/transparent"
                 android:hint="Password"
                 app:endIconMode="password_toggle"
-                app:layout_constraintLeft_toRightOf="@id/txtUsername"
-                app:layout_constraintRight_toRightOf="@id/txtUsername"
-                app:layout_constraintTop_toBottomOf="@+id/txtUsername"
-                app:passwordToggleEnabled="true">
+                app:endIconTint="@color/gray"
+                app:layout_constraintEnd_toEndOf="@id/txtUsername"
+                app:layout_constraintStart_toStartOf="@id/txtUsername"
+                app:layout_constraintTop_toBottomOf="@+id/txtUsername">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/txtPassword"
@@ -78,18 +88,18 @@
                     android:hint="Password"
                     android:inputType="textPassword"
                     android:padding="16dp"
-                    android:textColor="#FAFAFA"
-                    android:textColorHint="#757575" />
+                    android:textColor="@color/black"
+                    android:textColorHint="#737272" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <Button
                 android:id="@+id/btnForgotPass"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:backgroundTint="#00FFFFFF"
+                android:background="@color/zxing_transparent"
                 android:text="Forgot Password?"
                 android:textAllCaps="false"
-                android:textColor="#F77216"
+                android:textColor="@color/black"
                 app:layout_constraintStart_toStartOf="@id/txtUsername"
                 app:layout_constraintTop_toBottomOf="@id/tilPassword" />
 
@@ -119,7 +129,7 @@
                 app:iconPadding="0dp"
                 app:layout_constraintEnd_toEndOf="@+id/btnLogin"
                 app:layout_constraintStart_toStartOf="@+id/btnLogin"
-                app:layout_constraintTop_toBottomOf="@id/btnLogin"/>
+                app:layout_constraintTop_toBottomOf="@id/btnLogin" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <!-- Email / Username -->
@@ -132,6 +142,6 @@
 
         <!-- Sign up -->
 
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

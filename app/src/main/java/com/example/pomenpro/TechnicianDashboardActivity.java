@@ -8,6 +8,8 @@ import android.util.TypedValue;
 import android.view.TouchDelegate;
 import android.view.View;
 import android.view.Window;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -52,13 +54,39 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
         cvSetting     = findViewById(R.id.cvSetting);
         btnPower      = findViewById(R.id.imageView3);
 
+        Animation fade_in = AnimationUtils.loadAnimation(this, R.anim.fade_animation);
+        Animation fade_in2 = AnimationUtils.loadAnimation(this, R.anim.fade_animation);
+        fade_in2.setStartOffset(200);
+        Animation fade_in3 = AnimationUtils.loadAnimation(this, R.anim.fade_animation);
+        fade_in3.setStartOffset(400);
+        Animation fade_in4 = AnimationUtils.loadAnimation(this, R.anim.fade_animation);
+        fade_in4.setStartOffset(600);
+
+        Animation scale_down = AnimationUtils.loadAnimation(this, R.anim.button_scale_down);
+
         makeClickableButtonLike(btnPower);
 
         // Clicks
-        cvHome.setOnClickListener(v -> safeOpen(ProfileActivity.class));
-        cvPerformance.setOnClickListener(v -> safeOpen(PerformanceActivity.class));
-        cvTask.setOnClickListener(v -> safeOpen(TaskActivity.class));
-        cvSetting.setOnClickListener(v -> safeOpen(SettingsActivity.class));
+        cvHome.setOnClickListener(v -> {
+            v.startAnimation(scale_down);
+            safeOpen(ProfileActivity.class);
+        });
+        cvHome.startAnimation(fade_in);
+        cvSetting.setOnClickListener(v -> {
+            v.startAnimation(scale_down);
+            safeOpen(SettingsActivity.class);
+        });
+        cvSetting.startAnimation(fade_in2);
+        cvTask.setOnClickListener(v -> {
+            v.startAnimation(scale_down);
+            safeOpen(TaskActivity.class);
+        });
+        cvTask.startAnimation(fade_in3);
+        cvPerformance.setOnClickListener(v -> {
+            v.startAnimation(scale_down);
+            safeOpen(PerformanceActivity.class);
+        });
+        cvPerformance.startAnimation(fade_in4);
         btnPower.setOnClickListener(v -> confirmSignOut());
 
         // Load minimal profile

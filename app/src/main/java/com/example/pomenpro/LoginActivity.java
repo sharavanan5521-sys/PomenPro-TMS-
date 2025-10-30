@@ -7,12 +7,15 @@ import android.text.TextUtils;
 import android.util.Patterns;
 import android.view.View;
 import android.view.Window;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -30,6 +33,9 @@ public class LoginActivity extends AppCompatActivity {
     private FirebaseAuth auth;
     private DatabaseReference db;
 
+    private ConstraintLayout clLogin;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,19 +46,33 @@ public class LoginActivity extends AppCompatActivity {
         FirebaseApp.initializeApp(this);
         auth = FirebaseAuth.getInstance();
         db = FirebaseDatabase.getInstance().getReference();
+        Animation scale_down = AnimationUtils.loadAnimation(this, R.anim.button_scale_down);
+        Animation fade_in = AnimationUtils.loadAnimation(this, R.anim.bottom_fade);
+
+
 
         txtUsername = findViewById(R.id.txtUsername);
         txtPassword = findViewById(R.id.txtPassword);
         btnLogin = findViewById(R.id.btnLogin);
         btnSignup = findViewById(R.id.btnSignup);
         btnForgotPass = findViewById(R.id.btnForgotPass);
+        clLogin = findViewById(R.id.clLogin);
+
+        clLogin.startAnimation(fade_in);
+
+
 
         btnLogin.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { doLogin(); }
+            @Override
+            public void onClick(View v) {
+                v.startAnimation(scale_down); // 'v' is the View (btnlogin) that was clicked
+                doLogin();
+            }
         });
 
         btnSignup.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
+                v.startAnimation(scale_down);
                 startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
                 // Don't finish; let users come back with Back.
             }
